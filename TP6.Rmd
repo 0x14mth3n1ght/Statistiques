@@ -1,0 +1,438 @@
+---
+title: "TP6.Rmd"
+date: '2022-05-19'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question1
+
+Posons $$Y_{i}=ln(X_{i})$$
+Le rapport de vraisemblance entre les 2 lois normales:
+
+
+\begin{align*}
+Z_{n}  &= \frac{L(Y;\mu_{1})}{L(Y;\mu_{0})}= e^{(\frac{-[\sum_{i=1}^{n}(Y_{i}- \mu_{1})^{2})-\sum_{i=1}^{n}(Y_{i}- \mu_{0})^{2})]}{2\sigma_{0}^{2}})} \\
+       &= e^{\frac{(\mu_{1}-\mu_{0})\sum_{i=1}^{n}(Y_{i})}{\sigma_{0}^{2}}}e^{\frac{-n(\mu_{1}^{2}-\mu_{0}^{2})}{\sigma_{0}^{2}}} \\
+\end{align*}
+
+est une variable aléatoire continue sous $\mathbb P(\mu_{0})$
+
+D'après le lemme de Neyman-Pearson, la région critique optimale au seuil $\alpha$ est 
+
+\begin{align*}
+W &= \left\{  (y_{1},...,y_{n}); e^{\frac{[\sum_{i=1}^{n}(y_{i}- \mu_{0})^{2}-\sum_{i=1}^{n}(y_{i}- \mu_{1})^{2}]}{2\sigma_{0}^{2}})} > k 
+\right\} \\
+   &= \left\{ (y_{1},...,y_{n});e^{\frac{(\mu_{1}-\mu_{0})\sum_{i=1}^{n}(y_{i})}{\sigma_{0}^{2}}}e^{\frac{-n(\mu_{1}^{2}-\mu_{0}^{2})}{\sigma_{0}^{2}}} > k \right\} \\
+   &= \left\{ (y_{1},...,y_{n}); \frac{1}{n}\sum_{i=1}^{n}y_{i} > c \right\}
+\end{align*}
+
+On a donc la statistique de test:
+
+$$T(Y) = \frac{1}{n}\sum_{i=1}^{n}y_{i}$$
+D'où:
+
+$$\boxed{T(X) = \frac{1}{n}\sum_{i=1}^{n}ln(x_{i})}$$
+Déterminons $K_{\alpha}$ :
+
+Sous l'hypothèse H_{0}, T suit une loi 
+$$\mathbb N(\mu_{0},\frac{\sigma_{0}^{2}}{n})$$
+Donc, avec phi la fonction de répartition associée à la loi des Yi=ln(Xi):
+
+$$\mathbb P_{H_{0}}(W) = \mathbb P_{H_{0}}(\frac{1}{n}\sum_{i=1}^{n}ln(X_{i})> K_{\alpha})= \mathbb P_{H_{0}}(\frac{\sqrt{n}(\bar{Y_{n}}-\mu_{0})}{\sigma_{0}}>\frac{\sqrt{n}(K_{\alpha}-\mu_{0})}{\sigma_{0}})=\boxed{1-\phi(\frac{\sqrt{n}(K_{\alpha}-\mu_{0})}{\sigma_{0}})=\alpha}$$
+D'où , en fixant un premier alpha:
+$$\boxed{K_{\alpha}=\mu_{0}+\frac{\sigma_{0}}{\sqrt{n}}\phi^{-1}(1-\alpha)}$$
+
+Ainsi que:
+
+$$\mathbb P_{H_{1}}(W)= \mathbb P_{H_{1}} ( \bar{Y_{n}} > K_{\alpha}) = \boxed{1-\phi (\frac{\sqrt{n}(\mu_{0}-\mu_{1})}{\sigma_{0}}+\phi^{-1}(1-\alpha))=\beta}$$
+
+```{r include = TRUE, echo = TRUE}
+Dl_norm<-function(x){
+  r=0
+     for(l in x){
+       r=r+log(l)
+     }
+  return(r/length(x))
+ }
+```
+
+```{r include = TRUE, echo = TRUE}
+n<-10
+sig_0<-1
+mu_0<-0
+mu_1<-0.1
+X_0 <- rlnorm(n,mu_0,sig_0)
+X_1 <- rlnorm(n,mu_1,sig_0)
+
+L_0<-Dl_norm(X_0)
+L_1<-Dl_norm(X_1)
+div<-(1/n)*(L_1/L_0)
+
+alpha_test<-0.05
+
+#K_alpha=mu_0+(sig_0/sqrt(n))*qnorm(1-alpha_test,mu_0,sig_0*sig_0/n)
+K_alpha<-(1/sqrt(n))*(1/qlnorm(1-alpha_test,mu_0,1/n))
+print(K_alpha)
+
+alpha<-pnorm(K_alpha,mu_0,1/n)
+print(alpha)
+
+beta<-1-pnorm(K_alpha,mu_0,1/n)
+print(beta)
+
+```
+$\alpha$ est le quantile associé à $K_{\alpha}$ = taux d'erreur de première espèce (accepter à tort l'hypothèse nulle)$\approx$ 0.3 et $$\beta = 1- \alpha$$ le taux d'erreur de seconde espèce (rejeter à tort l'hypothèse nulle)
+
+$\newline$
+
+\textbf{Question 2}
+
+
+```{r include = TRUE, echo = TRUE}
+list<-1:100
+for( l in 1:100){
+  lognorm<-rlnorm(10,0,1)
+  list[l]<-Dl_norm(lognorm)
+}
+list_trie<-sort(list)
+K_alpha_moy<-list_trie[90]-0.0001
+beta_moy<-1-pnorm(K_alpha_moy,0,1/10)
+alpha_moy<-pnorm(K_alpha_moy,0,1/10) 
+
+print(K_alpha_moy)
+print(alpha_moy)
+print(beta_moy)
+```
+
+On retrouve des valeurs similaires malgré une marge d'erreur pour $K_{\alpha}$.
+
+```{r include = TRUE, echo = TRUE}
+marge_erreur<-(K_alpha_moy-K_alpha)/K_alpha_moy
+print(marge_erreur)
+```
+
+$\newline$
+
+\textbf{Question 3}
+
+On utilise encore la fonction de répartition pour trouver la p_value:
+
+```{r include = TRUE, echo = TRUE}
+lognorm<-rlnorm(10,0,1)
+p_value<-pnorm(Dl_norm(lognorm),0,1/10)
+print(p_value)
+
+```
+
+La p-value sert à jouer sur les zones de rejet et d'acceptation. 
+Lorsque les données sont collectées, la p_value est calculée et la décision suivante est prise :
+
+
+-si elle est inférieure à $\alpha$, on rejette l’hypothèse nulle au profit de l’hypothèse alternative
+
+
+-si elle est supérieure à $\alpha$, on rejette l’hypothèse alternative au profit de l’hypothèse nulle
+
+\newpage
+
+\textbf{Question 4}
+
+```{r include = TRUE, echo = TRUE}
+n<-c(20,50,100)
+for(x in n){
+  lognorm<-rlnorm(x,0,1)
+  p_value<-pnorm(Dl_norm(lognorm),0,1/x)
+  print(p_value)
+}
+```
+Plus la taille augmente, plus la p_value diminue et est incertaine
+
+
+\newpage
+
+\textbf{Question 5}
+
+D'après le lemme de Neyman-Pearson, la région de rejet $W$ optimale est définie par l'ensemble des points $(x_{1},x_{2},..,x_{n})$ de $R^{n}$ tels que : $\frac{\mathcal{L}(x,\theta_{1})}{\mathcal{L}(x,\theta_{0})} > k_{\alpha}$. On note $S_{n}^2$ l'estimateur sans biais de $\sigma^2$. 
+
+On choisit les hypothèses 
+
+
+$$
+Test = \left\{
+    \begin{array}{ll}
+        H_{0} : \mu = \mu_{0} \\
+        H_{1} : \mu = \mu_{1}
+    \end{array}
+\right.
+$$
+
+
+On a $W={\Lambda_{n}>k_{\alpha}}$ où $\Lambda_{n}=\frac{\sqrt{n}(\bar{X_{n}}-\mu_{0})}{S_{n}}$ suit une loi de Student à $n - 1$ degrés de liberté notée $T_{n-1}$. Ainsi $k_{\alpha}=F^{-1}{T{n-1}} (1-\alpha)$. 
+
+Ainsi la région de rejet est de la forme $W>F^{-1}{T{n-1}} (1-\alpha)$ avec  $F_{T_{n-1}}$ la fonction de répartion de $T_{n-1}$.
+
+Alors:
+
+$$\mathbb P_{H_{0}}(W) =\boxed{1-F_{T_{n-1}}(\frac{\sqrt{n}(K_{\alpha}-\mu_{0})}{\sigma_{0}})=\alpha}$$
+
+D'où , en fixant un premier alpha:
+$$\boxed{K_{\alpha}=\mu_{0}+\frac{S_{n}}{\sqrt{n}}F_{T_{n-1}}^{-1}(1-\alpha)}$$
+Ainsi que:
+
+$$\mathbb P_{H_{1}}(W) = \boxed{1-F_{T_{n-1}} (\frac{\sqrt{n}(\mu_{0}-\mu_{1})}{S_{n}}+F_{T_{n-1}}^{-1}(1-\alpha))=\beta}$$
+
+```{r include = TRUE, echo = TRUE}
+est_var <- function(echant, mu) {
+  n = length(echant);
+  return ((1 / n) * (sum((echant - mu) ^ 2)));
+}
+
+decision <- function(alpha, Sn, mu0, mu1) {
+  mean = mean(Sn);
+  n = length(Sn);
+  varEstimated = est_var(Sn, mu0);
+  val = mu0 + (sqrt(varEstimated) / sqrt(n)) * qt(p = 1 - alpha, df = n - 1);
+  if (mean > val) {
+    return (mu1);
+  }
+  return (mu0);
+}
+```
+
+On simule 100 fois le test
+```{r include = TRUE, echo = TRUE}
+matrix = matrix(0, 100, 20);
+for (i in seq(1, 100)) {
+  matrix[i,] = rnorm(n = 20, mean = 0, sd = 1);
+}
+```
+
+On applique notre règle de décision:
+```{r include = TRUE, echo = TRUE}
+vec_mu = seq(1, 100);
+for (i in seq(1, 100)) {
+  echant = matrix[i,];
+  vec_mu[i] = decision(0.05, echant, 1, 1.5);
+}
+
+count <-function(mu_vec) {
+  count_1 = 0;
+  count_1_5 = 0;
+  for (i in seq(1, length(mu_vec))) {
+    if (mu_vec[i] == 1) {
+      count_1 = count_1 + 1;
+    } else {
+      count_1_5 = count_1_5 + 1;
+    }
+  }
+  return (c(count_1, count_1_5));
+}
+```
+$\delta$ est une règle de décision et prend deux valeurs : $0$ et $1$. Cette variable aléatoire suit une loi de Bernoulli de paramètre $1-\alpha$.
+
+La région de rejet est de la forme $W>F^{-1}{T{n-1}} (1-\alpha)$. Comme la fonction de répartion d'une variable aléatoire qui suit une loi de Student est une fonction croissante indépendante du degré de liberté de la loi de Student, l'inverse de celle ci est une fonction décroissante. Ainsi lorsque $\alpha$ diminue : $F^{-1}{T{n-1}} (1-\alpha)$ augmente.
+
+```{r include = TRUE, echo = TRUE}
+alpha_vec = c(0.2, 0.1, 0.05, 0.01);
+n = 20;
+counted = matrix(0, length(alpha_vec), 1);
+for (j in seq(1, length(alpha_vec))) {
+  alpha = alpha_vec[j];
+  counted[j] = qt(p = 1 - alpha, df = n - 1);
+}
+counted;
+```
+
+```{r include = TRUE, echo = TRUE}
+alpha_vec = c(0.2, 0.1, 0.05, 0.01);
+counted = matrix(0, length(alpha_vec), 2);
+vec_mu = seq(1,100);
+for (j in seq(1, length(alpha_vec))) {
+  alpha = alpha_vec[j];
+  for (i in seq(1, 100)) {
+    echant = matrix[i,];
+    vec_mu[i] = decision(alpha, echant, 1, 1.5);
+    compt = count(vec_mu);
+    counted[j, 1] = compt[1];
+    counted[j, 2] = compt[2];
+  }
+}
+counted;
+```
+
+Ici, la p-value est donnée par $1-F^{T}_{{n-1}}(t)$ et correspond au vu de la zone de rejet, à la frontière entre acceptation et rejet d'hypothèse.
+
+```{r include = TRUE, echo = TRUE}
+test_matrix = matrix(0, 100, 20);
+for (i in seq(1, 100)) {
+  test_matrix[i,] = rnorm(n = 20, mean = 1, sd = sqrt(2));
+}
+alpha_vec = c(0.2, 0.1, 0.05, 0.01);
+```
+
+```{r include = TRUE, echo = TRUE}
+test = c(1, 2, 3, 4);
+for (i in 1:length(test)) {
+  alpha = alpha_vec[i];
+  test[i] = t.test(x = test_matrix, conf.level = 1 - alpha)$p.value;
+}
+test;
+```
+
+Les résultats sont cohérents, une p-value basse vient du fait qu'il faille une zone d'acceptation agrandie et dans ces conditions la p-value est inférieure à $\alpha$.
+
+\newpage
+
+\textbf{Question 6}
+
+On désigne les données sur l'ozone du site urbain par $x_1, \ldots, x_n$ et le site rural par $y_1, \ldots, y_n$, l'indice indiquant les $n$ jours différents pour lesquels nous avons des mesures. L'histogramme ci-dessous montre la différence $d_i = x_i - y_i$ pour $i = 1, \ldots, n$ pour les jours d'été.
+
+```{r include = TRUE}
+ozone.summer = read.csv("summer_ozone.csv")
+ozone.winter = read.csv("winter_ozone.csv")
+
+D_ete<-ozone.summer$NEUIL - ozone.summer$RUR.SE
+D_hiver<-ozone.winter$NEUIL - ozone.winter$RUR.SE
+```
+
+$\newline$
+
+```{r hist-diff, echo=TRUE}
+hist(D_ete, prob=TRUE, main = "Differences été")
+hist(D_hiver, prob=TRUE, main = "Differences hiver")
+```
+
+\textbf{I)} Supposons d'abord que les $D_{i} \sim \mathbb N(\mu,\sigma^{2})$
+
+On reprend les calculs avec 
+
+
+$$\boxed{T(X) = \frac{1}{n}\sum_{i=1}^{n}D_{i,ete}}$$
+
+Cas1, Di été
+
+
+```{r include = TRUE, echo = TRUE}
+D_norm<-function(x){
+  r=0
+     for(l in x){
+       r=r+l
+     }
+  return(r/length(x))
+ }
+```
+
+```{r include = TRUE, echo = TRUE}
+str(D_ete)
+
+n<-491
+mu_ete<-mean(D_ete)
+sig_ete<-sd(D_ete)
+norm_ete=dnorm(-60:70, mu_ete,sig_ete)
+
+Lete_0<-D_norm(D_ete)
+Lete_1<-D_norm(norm_ete)
+
+div<-(1/n)*(Lete_1/Lete_0)
+
+alpha_test<-0.05
+
+K_alpha<-(1/sqrt(n))*(1/qnorm(1-alpha_test,mu_ete,1/n))
+print(K_alpha)
+
+alpha<-pnorm(K_alpha,mu_ete,1/n)
+print(alpha)
+
+beta<-1-pnorm(K_alpha,mu_ete,1/n)
+print(beta)
+```
+
+$\newline$
+
+Cas2, Di hiver
+```{r include = TRUE, echo = TRUE}
+str(D_hiver)
+
+n<-463
+mu_hiver<-mean(D_hiver)
+sig_hiver<-sd(D_hiver)
+norm_hiver=dnorm(-60:10, mu_hiver,sig_hiver)
+
+Lhiver_0<-D_norm(D_hiver)
+Lhiver_1<-D_norm(norm_hiver)
+
+div<-(1/n)*(Lhiver_1/Lhiver_0)
+
+alpha_test<-0.05
+
+K_alpha<-(1/sqrt(n))*(1/qnorm(1-alpha_test,mu_hiver,1/n))
+print(K_alpha)
+
+alpha<-pnorm(K_alpha,mu_hiver,1/n)
+print(alpha)
+
+beta<-1-pnorm(K_alpha,mu_hiver,1/n)
+print(beta)
+```
+
+$\newline$
+
+\textbf{II)} Supposons d'abord que les $D_{i} \sim \mathbb log(N(\mu,\sigma^{2}))$
+
+Les valeurs des Di en été comme en hiver prennent souvent des valeurs négatives, on ne peut donc pas considérer Di comme suivant une loi log-normale directement.
+
+```{r include = TRUE, echo = TRUE}
+D_ete_log<-log(abs(D_ete))
+str(abs(D_ete_log))
+
+n<-491
+mu_ete_log<-mean(D_ete_log)
+sig_ete_log<-sd(D_ete_log)
+norm_ete_log=dnorm(0:70, mu_ete_log,sig_ete_log)
+
+#Cf la fonction définie en question 1
+Lete_0<-Dl_norm(D_ete_log)
+Lete_1<-Dl_norm(norm_ete_log)
+
+div<-(1/n)*(Lete_1/Lete_0)
+
+alpha_test<-0.05
+
+K_alpha<-(1/sqrt(n))*(1/qlnorm(1-alpha_test,mu_ete_log,1/n))
+print(K_alpha)
+
+alpha<-pnorm(K_alpha,mu_ete_log,1/n)
+print(alpha)
+
+beta<-1-pnorm(K_alpha,mu_ete_log,1/n)
+print(beta)
+```
+
+On ne peut donc pas appliquer le modèle de la loi log normale.
+Pour la loi normale , on constate des valeurs $K_{alpha,été} \approx -0.007$ et  $K_{alpha,hiver} \approx -0.002$ proches de 0 notamment en hiver
+
+\newpage
+\textbf{Question 7}
+
+```{r include = TRUE, echo = TRUE}
+nonParamBootstrap <- function(echantillon) {
+  M <- 100
+  opt <- optim(c(2,1), Dl_norm, x = echantillon, method = "L-BFGS-B", lower=c(-100,10^-4))
+  mus <- c()
+  for (i in 1:M) {
+    xsim <- sample(echantillon, size = 10, replace=TRUE)
+    opt <- optim(c(2,1), nlogL_Norm, x = xsim, method = "L-BFGS-B", lower=c(-100,10^-4))
+    mus <- append(mus, max(opt$par[1],0))
+  }
+  inf <- quantile(mus, 0.025)
+  sup <- quantile(mus, 0.975)
+
+  return (list(inf=inf,sup=sup))
+}
+```

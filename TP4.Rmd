@@ -1,0 +1,285 @@
+---
+title: "TP4"
+date: "08/04/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Question 1
+
+```{r, echo=FALSE}
+n<-25
+ech<-rnorm(n,mean = 0,sd = 1) 
+head(ech,n = 20)
+```
+
+```{r, echo=FALSE}
+hist(ech, freq=F)
+curve(dnorm(x,mean = 0,sd = 1),from = -6,to = 6,ylab="densité",add=T,col="red")
+```
+```{r, echo=FALSE}
+curve(dnorm(x, 0, 1), xlim = c(-10, 10), ylim = c(0, 0.58), col = "red", lwd = 3,ylab = "", main = "Exemples de densités associées à la loi normale")
+curve(dnorm(x, 2, 3), col = "green", lwd = 3, add = TRUE)
+curve(dnorm(x, 0, 5), col = "blue", lwd = 3, add = TRUE)
+curve(dnorm(x, -2, 0.7), col = "yellow", lwd = 3, add = TRUE)
+legend("topright", legend = c("N(0,1)", "N(2,9)", "N(0,25)", "N(-2,0.49)"),lty = 1, lwd = 3, col = c("red", "green", "blue", "yellow"))
+```
+
+#Question 2
+
+La densité d'une loi normale s'écrit
+$$f(x)=\frac{1}{\sigma \sqrt {2\pi}} e^{-\frac{(x-m)^{2}}{2 {\sigma} ^2}}$$
+
+Avec $$\theta = (m,\sigma)$$ , la vraisemblance s'écrit
+
+$$L(x_{1},...,x_{n},\theta)=\frac{1}{\sigma \sqrt {2\pi}} \prod e^{-\frac{(xi-m)^{2}}{2 {\sigma} ^2}}$$
+
+d'où
+
+$$ln L(x_{1},...,x_{n},\theta)= -n ln(\sigma) -n\frac{ln(2 \pi)}{2} - \frac{1}{2 {\sigma}^2}\sum (xi-m)^{2}$$
+
+On trouve donc en résolvant les équations de ln L (dérivée nulle):
+
+$$\hat{\mu}= \bar{xn}$$
+$$\hat{\sigma ²}= \frac{1}{n} \sum (xi -\bar{xn})^{2}$$
+
+```{r include = TRUE}
+log_norm = function(mu, std, X) {
+  n = length(X)
+  return(-n*log(std)+0.5*n*log(2*pi)-(1/(2*std**2))*sum((X-mu)**2))
+}
+```
+
+```{r include = FALSE}
+index = 1;
+ldVec = seq(0.1, 4, 0.01);
+LVec = seq(2.1, 6, 0.01);
+logNormVec_ld = ldVec;
+logNormVec_L = LVec;
+ld = 2;
+L = 4;
+X<-rnorm(25,mean = 0,sd = 1) ;
+for (lambda in ldVec){
+  logNormVec_ld[index] = log_norm(0,1,X);
+  index = index+1;
+}
+index = 1;
+for (l in LVec){
+  logNormVec_L[index] = log_norm(0,1,X);
+  index = index+1;
+}
+```
+
+```{r include = TRUE, echo = TRUE}
+plot(ldVec, logNormVec_ld);
+plot(LVec, logNormVec_L);
+```
+
+```{r include = TRUE, echo = FALSE}
+vect<-1:400
+X<-rnorm(25,mean = 0,sd = 1) ;
+row<-seq(-1,2,length.out=20)
+col<-seq(0.5,1.5,length.out=20)
+max<-0
+mu_max<-0
+sigma_max<-0
+iter<-1
+for(mu in row){
+     for(sigma in col){
+       if(iter==1){
+         max<-log_norm(mu,sigma,X)
+       }
+       else {
+         if(log_norm(mu,sigma,X)>max){
+           max<-log_norm(mu,sigma,X)
+           mu_max<-mu
+           sigma_max<-sigma
+         }
+         
+       }
+        vect[iter]<-log_norm(mu,sigma,X) 
+         iter<-iter+1
+     }
+}
+result_norm<- matrix(vect,nrow=20,ncol=20)
+image(row,col,result_norm,col=grey.colors(10), xlab = "mu", ylab = "sigma")
+contour(row,col,result_norm,add=TRUE)
+title(main="Surface de log-vraisemblance de loi normale")
+points(mu_max,sigma_max,pch=1,col="red")
+```
+On remarque que le maximum se situe légèrement au dessus d'un axe de symétries entre une parabole concave entourées par des paraboles convexes
+#Question 3
+
+```{r include = TRUE}
+vraisemblance_norm = function(mu, std, X) {
+  n = length(X)
+  return(1/(std*((2*pi)**(1/2)))*prod(exp(-(X-mu)**2/(2*std**2))))
+}
+```
+
+```{r include = TRUE, echo = FALSE}
+vect<-1:400
+X<-rnorm(25,mean = 0,sd = 1) ;
+row<-seq(-1,2,length.out=20)
+col<-seq(0.5,1.5,length.out=20)
+max<-0
+mu_max<-0
+sigma_max<-0
+iter<-1
+for(mu in row){
+     for(sigma in col){
+       if(iter==1){
+         max<-vraisemblance_norm(mu,sigma,X)
+       }
+       else {
+         if(vraisemblance_norm(mu,sigma,X)>max){
+           max<-vraisemblance_norm(mu,sigma,X)
+           mu_max<-mu
+           sigma_max<-sigma
+         }
+         
+       }
+        vect[iter]<-vraisemblance_norm(mu,sigma,X) 
+         iter<-iter+1
+     }
+}
+result_norm<- matrix(vect,nrow=20,ncol=20)
+image(row,col,result_norm,col=grey.colors(10), xlab = "mu", ylab = "sigma")
+contour(row,col,result_norm,add=TRUE)
+title(main="Surface de log-vraisemblance de loi normale")
+points(mu_max,sigma_max,pch=1,col="red")
+```
+
+
+#Question 4
+
+
+#Question 5
+
+```{r include = TRUE}
+log_optim <- function(mu, std, X){
+    accu <- 0
+    n=length(X)
+    for (i in seq(from=1, to=n, by=1)) {
+      accu = accu + (X[i] - mu)**2
+    }
+   return(0.5*(n * log(2*pi*(std**2)) + 1/(std**2) * accu))
+}
+```
+
+```{r include = FALSE}
+index = 1;
+ldVec = seq(0.1, 4, 0.01);
+LVec = seq(2.1, 6, 0.01);
+logOptimVec_ld = ldVec;
+logOptimVec_L = LVec;
+ld = 2;
+L = 4;
+X<-rnorm(25,mean = 0,sd = 1) ;
+for (lambda in ldVec){
+  logOptimVec_ld[index] = log_optim(0,1,X);
+  index = index+1;
+}
+index = 1;
+for (l in LVec){
+  logOptimVec_L[index] = log_optim(0,1,X);
+  index = index+1;
+}
+```
+
+```{r include = TRUE, echo = FALSE}
+plot(ldVec, logOptimVec_ld);
+plot(LVec, logOptimVec_L);
+```
+
+$\newline$
+$\newline$
+$\newline$
+$\newline$
+$\newline$
+$\newline$
+$\newline$
+$\newline$
+$\newline$
+$\newline$
+$\newline$
+$\newline$
+
+
+#Question 7
+
+```{r, echo=FALSE}
+curve(dgamma(x, 0, 1), xlim = c(-10, 10), ylim = c(0, 0.58), col = "red", lwd = 3,ylab = "", main = "Exemples de densités associées à la loi gamma")
+curve(dgamma(x, 2, 3), col = "green", lwd = 3, add = TRUE)
+curve(dgamma(x, 0, 5), col = "blue", lwd = 3, add = TRUE)
+curve(dgamma(x, 2, 0.7), col = "yellow", lwd = 3, add = TRUE)
+legend("topright", legend = c("N(0,1)", "N(2,9)", "N(0,25)", "N(-2,0.49)"),lty = 1, lwd = 3, col = c("red", "green", "blue", "yellow"))
+```
+
+#Question 8
+
+Soit
+
+$$a \geq 0 , b \geq 0$$
+La densité d'une loi gamma s'écrit
+
+$$f_{(a,b)}(x)=\frac{b^a}{\Gamma(a)}x^{a-1}e^{-bx}, x \geq 0$$
+
+$$ln L(x_{1},...,x_{n},a,b)= na ln(b) -n ln(\Gamma(a)) + (a-1)\sum ln(xi) -b\sum xi$$
+
+On trouve donc on résolvant les équations de ln L:
+
+$$\hat{a} = \frac{\bar{xn}^{2}}{\frac{1}{n}\sum (xi -\bar{xn})^{2}}$$
+
+$$\hat{b} = \frac{\bar{xn}}{\frac{1}{n}\sum (xi -\bar{xn})^{2}}$$
+
+```{r include = TRUE}
+log_gamma = function(a, b, X) {
+  n = length(X)
+  return(n*a*log(b)-n*log(gamma(a)) + (a-1)*sum(log(X)) -b *sum(X))
+}
+```
+
+
+```{r include = TRUE, echo = FALSE}
+vect<-1:400
+X<-dgamma(25,3,1) ;
+a<-3
+b<-1
+row<-seq(1,50,length.out=20)
+col<-seq(1,50,length.out=20)
+max<-0
+a_max<-0
+b_max<-0
+iter<-1
+for(a in row){
+     for(b in col){
+       if(iter==1){
+         max<-log_gamma(a,b,X)
+       }
+       else {
+         if(log_gamma(a,b,X)>max){
+           max<-log_gamma(a,b,X)
+           a_max<-a
+           b_max<-b
+         }
+         
+       }
+        vect[iter]<-log_gamma(a,b,X) 
+         iter<-iter+1
+     }
+}
+result_norm<- matrix(vect,nrow=20,ncol=20)
+image(row,col,result_norm,col=grey.colors(10), xlab = "mu", ylab = "sigma")
+contour(row,col,result_norm,add=TRUE)
+title(main="Surface de log-vraisemblance de loi gamma")
+points(mu_max,sigma_max,pch=1,col="red")
+```
+On remarque des lignes courbées sans maximum
+
+#Question 9

@@ -1,0 +1,471 @@
+---
+title: "TP3"
+date: "11/03/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+```
+
+## R Markdown
+
+# Démarche:
+
+# Définition des variables
+
+On simule N=1000 échantillons de taille $n \in \{5,30, 100 \}$ pour les 3 premières questions.
+
+On choisit de renormaliser uniformément chaque loi par sa moyenne empirique et variance empirique pour obtenir des lois centrées réduites.
+
+```{r, echo=FALSE}
+mu <- 1
+sigma <- 2
+N <- 1000
+ns <- c(100)
+```
+
+# Moyenne empirique d'un échantillon
+
+```{r, echo=FALSE}
+
+moy_empirique <- function(echantillons) {
+  ret <- apply(echantillons, 1, mean)
+  return(ret)
+}
+```
+
+# Variance empirique d'un échantillon
+```{r, echo=FALSE}
+var_empirique <- function(xs) {
+  n <- length(xs)
+  moy <- mean(xs)
+  var_emp <- 0
+  # La formule du sigma empirique
+  for (i in 1:n) { var_emp <- var_emp + (xs[i] - moy)^2 }
+  var_emp <- var_emp / (n - 1)
+  return(var_emp)
+}
+```
+
+\textbf{Question 1}
+
+# Échantillons Gaussienne
+```{r, echo=FALSE}
+n<-5
+g <- matrix(rnorm(N * n, mu, sigma), N, n)
+moy_emp <- moy_empirique(g)
+var_emp <- apply(g, 1, var_empirique)
+U <- (g - moy_emp) / var_emp
+hist(moy_emp, breaks = n, main = paste("Moyenne empirique de gaussiennes pour n = ", n))
+```
+
+```{r, echo=FALSE}
+hist(U, breaks = n, main = paste("Loi empirique des U_n,i pour n = ", n))
+```
+
+```{r, echo=FALSE}
+n<-30
+g <- matrix(rnorm(N * n, mu, sigma), N, n)
+moy_emp <- moy_empirique(g)
+var_emp <- apply(g, 1, var_empirique)
+U <- (g - moy_emp) / var_emp
+hist(moy_emp, breaks = n, main = paste("Moyenne empirique de gaussiennes pour n = ", n))
+```
+
+```{r, echo=FALSE}
+hist(U, breaks = n, main = paste("Loi empirique des U_n,i pour n = ", n))
+```
+
+```{r, echo=FALSE}
+n<-100
+g <- matrix(rnorm(N * n, mu, sigma), N, n)
+moy_emp <- moy_empirique(g)
+var_emp <- apply(g, 1, var_empirique)
+U <- (g - moy_emp) / var_emp
+hist(moy_emp, breaks = n, main = paste("Moyenne empirique de gaussiennes pour n = ", n))
+```
+
+```{r, echo=FALSE}
+hist(U, breaks = n, main = paste("Loi empirique des U_n,i pour n = ", n))
+```
+La moyenne empirique suit une loi gaussienne (avec quelques écarts).
+
+On constate que les $U_{n,i}$ représentent la loi gaussienne à mesure que la taille augmente.
+
+$\newline$
+$\newline$
+
+\textbf{Question 2}
+
+On suppose $$ \alpha \geq 2 $$
+Démonstration de la formule de l'espérance d'une loi de Pareto 
+$\newline$
+$$F_X(x)= (1-\left( \frac{a}{x} \right)^{\alpha}) , x \ge a$$
+$\newline$
+$$E(X)= \int_{0}^{\infty} 1-F_X(t)dt=\int_{0}^{\infty} P(X>t)dt$$ 
+$\newline$
+donc
+$\newline$
+$$E(X) = a+\int_{a}^{\infty}\left(\frac{a}{t}\right)^{\alpha}dt=a + \frac{a}{\alpha -1} =\frac{\alpha a}{\alpha -1}$$
+Ici:
+$\alpha$=3, a= 1
+E(X) = 1.5
+
+```{r, echo=FALSE}
+library("rmutil") # Pour la loi de Pareto
+# Variables globales
+N <- 1000
+ns <- c(100)
+a <- 1
+alpha <- 3
+print(mean(rpareto(N* 5, m = a, s = alpha)))
+print(mean(rpareto(N* 30, m = a, s = alpha)))
+print(mean(rpareto(N* 100, m = a, s = alpha)))
+```
+
+# Échantillons Pareto
+
+```{r, echo=FALSE}
+n<-5
+g <- matrix(rpareto(N* n, m = a, s = alpha), N, n)
+moy_emp <- moy_empirique(g)
+var_emp <- apply(g, 1, var_empirique)
+U <- (g - moy_emp) / var_emp
+hist(moy_emp, breaks = n, main = paste("Moyenne empirique de lois de Pareto pour n = ", n))
+```
+
+```{r, echo=FALSE}
+hist(U, breaks = n, main = paste("Loi empirique des U_n,i pour n = ", n))
+```
+
+```{r, echo=FALSE}
+n<-30
+g <- matrix(rpareto(N* n, m = a, s = alpha), N, n)
+moy_emp <- moy_empirique(g)
+var_emp <- apply(g, 1, var_empirique)
+U <- (g - moy_emp) / var_emp
+hist(moy_emp, breaks = n, main = paste("Moyenne empirique de lois de Pareto pour n = ", n))
+```
+
+```{r, echo=FALSE}
+hist(U, breaks = n, main = paste("Loi empirique des U_n,i pour n = ", n))
+```
+
+```{r, echo=FALSE}
+n<-100
+g <- matrix(rpareto(N* n, m = a, s = alpha), N, n)
+moy_emp <- moy_empirique(g)
+var_emp <- apply(g, 1, var_empirique)
+U <- (g - moy_emp) / var_emp
+hist(moy_emp, breaks = n, main = paste("Moyenne empirique de lois de Pareto pour n = ", n))
+```
+
+```{r, echo=FALSE}
+hist(U, breaks = n, main = paste("Loi empirique des U_n,i pour n = ", n))
+```
+
+On constate que les $U_{n,i}$ représentent mieux la loi de pareto que les moyennes empiriques, à mesure que la taille augmente.
+
+$\newline$
+$\newline$
+
+# Échantillons Poisson
+\textbf{Question 3}
+
+```{r, echo=FALSE}
+N <- 1000
+ns <- 100
+lambda <- 0.4
+```
+
+```{r, echo=FALSE}
+n<-5
+g <- matrix(rpois(N * n, lambda), N, n)
+moy_emp <- moy_empirique(g)
+var_emp <- apply(g, 1, var_empirique)
+U <- (g - moy_emp) / var_emp
+hist(moy_emp, breaks = n, main = paste("Moyenne empirique de lois de Poisson pour n = ", n))
+```
+
+```{r, echo=FALSE}
+hist(U, breaks = n, main = paste("Loi empirique des U_n,i pour n = ", n))
+```
+
+```{r, echo=FALSE}
+n<-30
+g <- matrix(rpois(N * n, lambda), N, n)
+moy_emp <- moy_empirique(g)
+var_emp <- apply(g, 1, var_empirique)
+U <- (g - moy_emp) / var_emp
+hist(moy_emp, breaks = n, main = paste("Moyenne empirique de lois de Poisson pour n = ", n))
+```
+
+```{r, echo=FALSE}
+hist(U, breaks = n, main = paste("Loi empirique des U_n,i pour n = ", n))
+```
+
+```{r, echo=FALSE}
+n<-100
+g <- matrix(rpois(N * n, lambda), N, n)
+moy_emp <- moy_empirique(g)
+var_emp <- apply(g, 1, var_empirique)
+U <- (g - moy_emp) / var_emp
+hist(moy_emp, breaks = n, main = paste("Moyenne empirique de lois de Poisson pour n = ", n))
+```
+
+```{r, echo=FALSE}
+hist(U, breaks = n, main = paste("Loi empirique des U_n,i pour n = ", n))
+```
+
+Ici l'approximation par loi des moyennes empiriques occulte les évènements rares (pics des U_n,i entre -2 et 0) caractéristiques d'une loi de poisson pour obtenir en moyenne une gaussienne.
+
+$\newline$
+
+\textbf{Question 4}
+
+On a vu d'après les 3 exemples précédent que la moyenne empirique n'est pas toujours un estimateur très fiable.
+
+On doit donc calculer renormaliser uniformément chaque loi avec les U_n,i pour obtenir un échantillon gaussien bien réparti et non biaisé.
+
+$\newline$
+
+\textbf{Question 5}
+
+(Échantillon généré aléatoirement à chaque compilation)
+
+```{r, echo=FALSE}
+n<-10
+p<-0.7
+
+binom<-rbinom(n=10,size = 1,prob = 0.7)
+plot(binom)
+```
+
+Pour estimer p il suffit d'estimer la moyenne de l'échantillon de bernoulli.
+
+$\newline$
+\textbf{Question 6}
+
+L_bern= $p^{s}*(1-p)^{n-s}$ où s=nombre de succès
+
+```{r echo = TRUE}
+L_bern <- function (p, binom) {
+    n <- length(binom)
+    sx <-sum(binom)
+    return(log(p^sx*(1-p)^(n-sx)))
+}
+```
+
+$\newline$
+\textbf{Question 7}
+
+```{r include = FALSE}
+vec = c(1:10);
+p_vec = seq(0.1, 1, 0.1)
+for (i in 1:10){
+  p = p_vec[i];
+  vec[i] <- L_bern(p, binom);
+}
+```
+
+```{r include = TRUE, echo = FALSE, fig.align = 'center'}
+plot(p_vec, vec);
+```
+
+On remarque que la vraisemblance suit une courbe en cloche et que maximum de vraisemblance s'approche de p = 0.7 / est atteint entre 0.6 et 0.8 selon l'échantillon généré 
+
+$\newline$
+\textbf{Question 8}
+
+On s'approche du maximum de vraisemblance : 
+
+```{r include = TRUE, echo = FALSE}
+p = optimize(f = L_bern, c(binom), interval = 0:1, maximum = TRUE);
+print(p$maximum);
+```
+
+$\newline$
+\textbf{Question 9}
+
+```{r include = FALSE, echo = FALSE}
+vec_max = seq(10, 2000, 20);
+index = 1;
+for (i in seq(10, 2000, 20)){
+  binom_opt = rbinom(size = 1, prob = 0.7, n = i);
+  vec_max[index] <- optimize(f = L_bern, binom_opt, interval = 0:1, maximum = TRUE)$maximum;
+  index <- index+1;
+}
+```
+
+```{r include = TRUE, echo = FALSE, fig.align = 'center'}
+plot(seq(10, 2000, 20), vec_max, xlab = "n");
+
+```
+
+On constate que de n=0 à n $\approx$ 1300 $\lvert L_{max} - 0,7 \rvert -> 0$, puis partir de n $\approx$ 1300, une discontinuité assigne $L_{max}$ à 1.
+
+Pour combattre ces instabilités dûes au produit des densités de dans le calcul de la vraisemblance on peut utiliser la log-vraisemblance pour obtenir des sommes de densités plus facile à différencier dès que la taille augmente
+
+$\newline$
+
+\textbf{Question 10}
+
+L_norm = $\frac{1}{(\sigma \sqrt{2\pi})^{n}}e^{-\frac{1}{2\sigma^2}\sum_{i = 1}^{n}(X_{i}-\mu)^2}$
+
+```{r echo = TRUE}
+L_norm <- function (mu, std, X) {
+  n = length(X)
+  return(1/(std*sqrt(2*pi))**n * exp(-(1/(2*std**2))*sum((X-mu)**2)))
+}
+```
+
+$\newline$
+\textbf{Question 11}
+
+```{r include = TRUE, echo = FALSE, fig.align = 'center'}
+gauss <- rnorm(mean = 2, sd = 1, n = 10);
+index <- 0;
+Vraisemblance = 1:101;
+for (i in seq(0, 4, 0.04)){
+  index <- index+1;
+  Vraisemblance[index] <- L_norm(mu = i, std = 1,X = gauss);
+}
+plot(1:101, Vraisemblance);
+```
+
+Le maximum de vraisemblance est obtenu entre la 40ème et 60ème itération pour retrouver en moyenne à i=50 $\mu = 50*0.04 = 2$
+
+
+$\newline$
+\textbf{Question 12}
+
+On s'approche du maximum de vraisemblance : 
+
+```{r include = TRUE, echo = FALSE}
+p = optimize(f = L_norm,1, gauss, interval = 0:4, maximum = TRUE);
+print(p$maximum);
+```
+
+$\newline$
+\textbf{Question 13}
+
+On retrouve les instabilités de la vraisemblance , exacerbées par les exponentielles des gaussiennes, qui ne permettent donc pas de mesurer de convergence et produisent parfois une constante éloignée de $\mu$ :
+
+```{r include = FALSE}
+vec_max = seq(10, 2000, 20);
+index = 1;
+for (i in seq(10, 2000, 20)){
+  gauss_opt = rnorm(mean = 2, sd = 1, n = i);
+  vec_max[index] <- optimize(L_norm, 1, gauss, maximum = TRUE, interval = 0:4)$maximum;
+  index <- index+1;
+}
+
+```
+
+```{r include = TRUE, echo = FALSE, fig.align = 'center'}
+plot(seq(10, 2000, 20), vec_max, xlab = "n");
+```
+
+Passons à la log vraisemblance en calculant des sommes:
+
+```{r include = TRUE}
+log_norm = function(mu, std, X) {
+  n = length(X)
+  return(-n*log(std)+0.5*n*log(2*pi)-(1/(2*std**2))*sum((X-mu)**2))
+}
+```
+
+```{r include = FALSE}
+vec_max = seq(10, 2000, 20);
+index = 1;
+for (i in seq(10, 2000, 20)){
+  gauss_opt_log = rnorm(mean = 2, sd = 1, n = i);
+  vec_max[index] <- optimize(log_norm, 1, gauss_opt_log, maximum = TRUE, interval = 0:4)$maximum;
+  index <- index+1;
+}
+
+```
+```{r include = TRUE, echo = FALSE, fig.align = 'center'}
+plot(seq(10, 2000, 20), vec_max, xlab = "n")
+```
+
+Ici, il n'y a pas de problèmes d'instabilité numérique, et ce pour toute taille $N$ d'échantillon, de plus la convergence vers $\lambda = 2$ est de plus en plus précise pour $N$ grand.
+
+$\newline$
+\textbf{Question 14}
+
+L'estimateur de maximum de vraisemblance pour l'écart-type est :
+
+$$\sigma = \sum_{i=1}^{n} \left( xi - \mu\ \right)^{2}$$
+
+$$E(\sigma ^2 )=  \frac{(n-1)\sigma ^2}{n}$$
+
+Ainsi l'écart type peut être biaisé et il serait intéressant de le faire varier
+
+Maximum de vraisemblance de la concentration horaire maximale d'ozone (en µ^g/m³) pour chaque site & saison :
+
+```{r include = FALSE}
+ozone.winter = read.csv("winter_ozone.csv")
+ozone.summer = read.csv("summer_ozone.csv")
+
+#hist(ozone.winter$NEUIL)
+#hist(ozone.winter$RUR.SE)
+#hist(ozone.summer$NEUIL)
+#hist(ozone.summer$RUR.SE)
+```
+
+
+```{r include = FALSE}
+Neuilly_ozone_hiver = seq(10, 2000, 20);
+index = 1;
+for (i in seq(10, 2000, 20)){
+  Neuilly_ozone_hiver[index] <- optimize(log_norm, 1, ozone.winter$NEUIL, maximum = TRUE, interval = 0:100)$maximum;
+  index <- index+1;
+}
+
+```
+```{r include = TRUE, echo = FALSE, fig.align = 'center'}
+plot(seq(10, 2000, 20), Neuilly_ozone_hiver, xlab = "n")
+```
+
+```{r include = FALSE}
+Neuilly_ozone_été = seq(10, 2000, 20);
+index = 1;
+for (i in seq(10, 2000, 20)){
+  Neuilly_ozone_été[index] <- optimize(log_norm, 1, ozone.summer$NEUIL, maximum = TRUE, interval = 0:100)$maximum;
+  index <- index+1;
+}
+
+```
+```{r include = TRUE, echo = FALSE, fig.align = 'center'}
+plot(seq(10, 2000, 20), Neuilly_ozone_été, xlab = "n")
+```
+
+```{r include = FALSE}
+Rural_ozone_hiver = seq(10, 2000, 20);
+index = 1;
+for (i in seq(10, 2000, 20)){
+  Rural_ozone_hiver[index] <- optimize(log_norm, 1, ozone.winter$RUR.SE, maximum = TRUE, interval = 0:100)$maximum;
+  index <- index+1;
+}
+
+```
+```{r include = TRUE, echo = FALSE, fig.align = 'center'}
+plot(seq(10, 2000, 20), Rural_ozone_hiver, xlab = "n")
+```
+
+```{r include = FALSE}
+Rural_ozone_été = seq(10, 2000, 20);
+index = 1;
+for (i in seq(10, 2000, 20)){
+  Rural_ozone_été[index] <- optimize(log_norm, 1, ozone.summer$RUR.SE, maximum = TRUE, interval = 0:100)$maximum;
+  index <- index+1;
+}
+
+```
+```{r include = TRUE, echo = FALSE, fig.align = 'center'}
+plot(seq(10, 2000, 20), Rural_ozone_été, xlab = "n")
+```
+

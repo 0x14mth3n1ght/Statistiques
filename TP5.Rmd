@@ -1,0 +1,1085 @@
+---
+title: "TP5"
+date: "02/05/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#Question1
+
+On simule un échantillon de 10 lois normales de moyenne 2 et d'écart-type 1 
+
+```{r, echo=FALSE}
+n<-10
+ech<-rnorm(n,mean = 2,sd = 1) 
+head(ech,n = 20)
+```
+
+Soit un échantillon iid de gaussiennes, on a :
+
+$$ln L_{n}(x_{1},...,x_{n},\theta)= -n ln(\sigma) -n\frac{ln(2 \pi)}{2} - \frac{1}{2 {\sigma}^2}\sum (xi-m)^{2}$$
+On trouve alors résolvant les équations de ln L (dérivée nulle):
+
+$$\hat{\mu}= \bar{xn}$$
+
+$$\hat{\sigma ^{2}}= \frac{1}{n-1} \sum (xi -\bar{xn})^{2}$$
+```{r, echo=FALSE}
+mu<-mean(ech)
+sigma_carre<-(1/(n-1))* sum((ech -mu)**2)
+print(mu)
+print(sigma_carre)
+```
+
+On a $$\frac{\sqrt{n}(\hat{\mu} - \mu)}{\sqrt{\hat{\sigma ^{2}}}} \sim Student(n-1)$$
+
+D'où, avec $$\alpha = 0.05$$:
+
+$$\mathbb{P}(t^{n-1}_{\frac{\alpha}{2}} \leq \frac{\sqrt{n}(\hat{\mu} - \mu)}{\sqrt{\hat{\sigma ^{2}}}} \leq t^{n-1}_{1-\frac{\alpha}{2}})=1-\alpha$$
+Ainsi l'intervalle de confiance à 95% est:
+
+$$I(\mu,n)= [\hat{\mu}-\sqrt{\frac{\hat{\sigma ^{2}}}{n}} t^{n-1}_{1-\frac{\alpha}{2}}, \hat{\mu}-\sqrt{\frac{\hat{\sigma ^{2}}}{n}} t^{n-1}_{\frac{\alpha}{2}}]$$
+```{r, echo=FALSE}
+alpha=0.05
+a_theorique=mu-sqrt(sigma_carre/n)*quantile(ech,1-alpha/2)
+b_theorique=mu-sqrt(sigma_carre/n)*quantile(ech,alpha/2)
+print(a_theorique)
+print(b_theorique)
+```
+
+Or $$\hat{\theta} \sim \mathbb{N}(\theta,I_{n}(\theta)^{-1}) et I_{n}(\theta)^{-1}= -E(H_{n}(ln(L_{n})))$$
+
+En calculant le hessien de la log vraisemblance plus haut:
+
+$$\begin{pmatrix}
+-\frac{n}{\sigma ^{2}} &  \frac{2}{\sigma ^{3}}(n \mu - \sum X_{i})\\
+\frac{2}{\sigma ^{3}}(n \mu - \sum X_{i}) &  \frac{n}{\sigma ^{2}} -3 \frac{\sum X_{i} - \mu ^{2}}{\sigma ^{4}})
+\end{pmatrix}$$
+
+D'où
+
+$$ I_{n}(\theta)^{-1}= \begin{pmatrix}
+\frac{2n}{\sigma ^{2}} & 0 \\
+ 0 &  \frac{n}{\sigma ^{2}}
+\end{pmatrix}$$
+
+Ainsi, via la régularité du modèle:
+
+$$I_n(\theta)^{-1} ( \hat{\theta} - \theta) \sim \mathbb{N}(0,I_{n})$$
+
+Grâce à la formule de probabilités totales, on peut déduire que la différence entre estimateur et paramètre de la moyenne suit une loi normale centrée réduite:
+
+$$\frac{2n}{\sigma ^ 2}( \hat{\mu} - \mu) \sim N(0,\frac{4n^{3/2}}{\sigma ^{2}})$$
+Donc , d'après le lemme de Slutsky, l'intervalle de confiance asymptotique est :
+
+$$I(\mu,n)= [\hat{\mu} - \frac{\sqrt{n}}{\hat{\sigma}} \mu_{1- \frac{\alpha}{2}},\hat{\mu} - \frac{\sqrt{n}}{\hat{\sigma}} \mu _{\frac{\alpha}{2}}]$$
+
+#Question2
+
+```{r, echo=FALSE}
+matrix= matrix(0,100,20)
+for (i in seq(1,100)){
+  matrix[i,]= rnorm(n=20, mean=2, sd= 1)
+}
+```
+
+On applique notre règle de décision pour faire le décompte
+```{r, echo=FALSE}
+est_var <- function(echant, mu) {
+  n = length(echant);
+  return ((1 / n) * (sum((echant - mu) ^ 2)));
+}
+
+decision <- function(alpha, Sn, mu0, mu1) {
+  mean = mean(Sn);
+  n = length(Sn);
+  varEstimated = est_var(Sn, mu0);
+  val = mu0 + (sqrt(varEstimated) / sqrt(n)) * qt(p = 1 - alpha, df = n - 1);
+  if (mean > val) {
+    return (mu1);
+  }
+  return (mu0);
+}
+
+vec_mu = seq(1, 100);
+for (i in seq(1, 100)) {
+  echant = matrix[i,];
+  vec_mu[i] = decision(0.05, echant, 1, 1.5);
+}
+
+count <-function(mu_vec) {
+  count_1 = 0;
+  count_1_5 = 0;
+  for (i in seq(1, length(mu_vec))) {
+    if (mu_vec[i] == 1) {
+      count_1 = count_1 + 1;
+    } else {
+      count_1_5 = count_1_5 + 1;
+    }
+  }
+  return (c(count_1, count_1_5));
+}
+```
+
+L'inverse de la fonction de répartition de la loi de Student associée est décroissante
+```{r, echo=FALSE}
+alpha_vec = c(0.2, 0.1, 0.05, 0.01);
+n = 20;
+counted = matrix(0, length(alpha_vec), 1);
+for (j in seq(1, length(alpha_vec))) {
+  alpha = alpha_vec[j];
+  counted[j] = qt(p = 1 - alpha, df = n - 1);
+}
+counted;
+```
+
+```{r, echo=FALSE}
+alpha_vec = c(0.2, 0.1, 0.05, 0.01);
+counted = matrix(0, length(alpha_vec), 2);
+vec_mu = seq(1,100);
+for (j in seq(1, length(alpha_vec))) {
+  alpha = alpha_vec[j];
+  for (i in seq(1, 100)) {
+    echant = matrix[i,];
+    vec_mu[i] = decision(alpha, echant, 1, 1.5);
+    compt = count(vec_mu);
+    counted[j, 1] = compt[1];
+    counted[j, 2] = compt[2];
+  }
+}
+print(counted);
+```
+Les résultats sont cohérents
+
+#Question3
+
+```{r include = TRUE}
+log_norm = function(mu, std, X) {
+  n = length(X)
+  return(-n*log(std)+0.5*n*log(2*pi)-(1/(2*std**2))*sum((X-mu)**2))
+}
+```
+
+
+
+##TP de l'année dernière = mêmes questions dans un autre ordre ( correspond à la suite des questions à partir de Q4 / ordre décalé vers Q12_ici -> Q9_sujet cette année)
+## Maximum de vraisemblance pour plusieurs paramètres
+
+
+### Question 1
+
+Pour simuler un tel échantillon, on a :
+
+```{R sim_weibull_q1 , include = TRUE}
+echantWeibull <- rweibull(10,2,3)
+```
+
+Nous avons implémenté la fonction demandée de la manière suivante :
+
+```{r def_nlogn_weibull, include = TRUE}
+nlogL_Weibull <- function(theta, x) {
+  y <- log(dweibull(x,theta[1],theta[2]))
+  s <- sum(y)
+  return (-s)
+}
+```
+
+Où `theta[1]` et `theta[2]` sont respectivement $a$ et $b$ dans $\theta = (a,b)$.
+
+\newpage
+
+### Question 2
+
+```{r prepare_q2, include = FALSE}
+# length of theta1 and theta2
+length_a_02 <- 100
+length_b_02 <- length_a_02
+
+# preparing data entries
+tab_a_02 <- seq(from = 0.5, to = 4, length.out = length_a_02)
+tab_b_02 <- seq(from = 1, to = 4, length.out = length_b_02)
+x_02 <- data.frame(theta1 = tab_a_02, theta2 = tab_b_02)
+
+# preparing the matrix of results
+m_02 <- matrix(nrow = length_a_02, ncol = length_b_02)
+```
+```{r do_q2, include = FALSE}
+# applying nlogL_Weibull for every possible values of theta
+for (i in seq_along(tab_a_02)) {
+  for (j in seq_along(tab_b_02)) {
+    m_02[i, j] <- nlogL_Weibull(theta = c(tab_a_02[i], tab_b_02[j]), x = echantWeibull)
+  }
+}
+```
+
+Afin de faire une telle simulation, nous faisons varier a et b respectivement dans $[0.5, 4]$ et $[1, 4]$.
+Les résultats sont résumés dans le graphe 3D suivant, représentant la log-vraisemblance de l'échantillon
+précédemment simulé en fonction des variations de $a$ et $b$ :
+
+```{r render_q2, include = TRUE, echo = FALSE}
+
+####### WARNING : THE FOLLOWING METHOD HAS CHANCES TO FAIL, IF SO JUST RESTART KNIT/REDO THE do_q2 PART #######
+
+# prep color shades
+nofColors <- 100
+colorFunc <- colorRampPalette(c("blue", "red"))
+colors_ <- colorFunc(nofColors)
+
+m_02.centerValues <- (m_02[-1, -1] + m_02[-1, -ncol(m_02)] + m_02[-nrow(m_02), -1] + m_02[-nrow(m_02), -ncol(m_02)] ) / 4
+
+m_02.colorBin <- cut(m_02.centerValues, nofColors)
+
+# rendering the actual graph
+persp(x = tab_a_02, y = tab_b_02, z = m_02, theta = 200, phi = 25, border = NA,
+      main = "Log-Vraisemblance de l'échantillon", sub = "en fonction de theta = (a,b)",
+      xlab = "a in [0.5, 4]", ylab = "b in [1, 4]", zlab = "Log-Vrais(theta)",
+      col = colors_[m_02.colorBin], d = 3)
+```
+
+Nous voyons que plus le couple $(a,b)$ tend vers $(4,1)$, plus le log-vraisemblance semble augmenter.
+Bien sûr, on remarque qu'aux 3 autres coins du graphe il y a une légère augmentation du log-vraisemblance.
+
+On regarde alors pour quelles valeurs de $a$ et $b$ on a le minimum de vraisemblance :
+
+```{r res_q2, include = TRUE, echo = FALSE}
+idx_Q02 <- which(m_02==min(m_02), arr.ind = TRUE)
+
+
+
+print(paste("On a alors a = ", tab_a_02[idx_Q02[2]], " et b = ", tab_b_02[idx_Q02[1]]))
+```
+
+Ce qui souligne les résultats représentés sur le graphe.
+
+### Question 3
+
+On utilise alors la méthode suivante afin de pouvoir avoir un résultat plus précis :
+
+```{R optim_q3 , include = TRUE}
+opt <- optim(par = c(2,3), nlogL_Weibull, x = echantWeibull)
+```
+
+```{r show_q3, include = TRUE, echo = FALSE}
+print(paste("On obtient : a = ", opt$par[1], " et b = ", opt$par[2]))
+```
+
+La majorité du temps, les valeurs sont semblables, cependant la faible taille de
+l'échantillon empêche d'avoir des résultats qui soient toujours identiques.
+
+
+
+
+
+
+\newpage
+
+**Gérer les contraintes sur les paramètres**
+
+### Question 4
+
+```{R optim_mieux , include = TRUE}
+nlogL_Weibull <- function(theta, x) {
+  y <- log(dweibull(x,theta[1],theta[2]))
+  s <- sum(y)
+  if (s < -10^(6)) {
+    return (10^6)
+  }
+  return (-s)
+
+}
+
+
+opt <- optim(par = c(2,3),nlogL_Weibull, x = echantWeibull, method = "L-BFGS-B",
+             lower = c(0,10^(-4)), upper = c(100,100))
+print(paste("On a : a = ", opt$par[1], " et b = ", opt$par[2]))
+```
+
+
+### Question 5
+
+```{r sensibilite, include=TRUE}
+#fonction etudiant la sensibilite des resultats pour un echantillon de taille n
+#(en etudiant 1000 echantillons différents)
+sensibiliteResult <- function(n) {
+  y <- c()
+  for (i in 1:1000) {
+    y <- append(y, optim(c(2,3), nlogL_Weibull, x = rweibull(n, 2, 3), method = "L-BFGS-B",
+                         lower = c(0,10^(-4))))
+  }
+  a <- c()
+  b <- c()
+  for (i in 1:1000) {
+    a <- append(a, y[i]$par[1])
+    b <- append(b, y[i]$par[2])
+  }
+  min_a <- min(a)
+  max_a <- max(a)
+  min_b <- min(b)
+  max_b <- max(b)
+
+  return(c(min_a, max_a, min_b, max_b))
+
+}
+```
+
+
+
+
+```{r affichage_q05, include=FALSE, echo=TRUE}
+#affichage sensibilite pour n = 10, n = 100 et n = 1000
+for (N in c(10,100,1000)) {
+  sensibilite <- sensibiliteResult(N)
+  print(paste("Pour un echantillon de taille ", N, " :"))
+  print(paste("   a entre ", sensibilite[1], " et ", sensibilite[2]))
+  print(paste("   b entre ", sensibilite[3], " et ", sensibilite[4]))
+}
+```
+On observe que plus la taille de nos échantillons est élevée, plus la sensibilité de nos résultats est faible.
+On voit que pour n=10, nos résultats ne sont pas très fiables et peuvent être éloignés du résultat théorique.
+
+\newpage
+
+## Normalité asymptotique de l'EMV et l'intervalle de confiance
+
+### Question 6
+
+```{R hessianweibul,include=TRUE,echo=FALSE}
+hes<-optim(par=c(2,3),nlogL_Weibull, x = echantWeibull, hessian=TRUE)
+
+
+matcov<-solve(hes$hessian)
+vara <- matcov[1]
+varb <- matcov[4]
+aexp <- hes$par[1]
+bexp <- hes$par[2]
+intervalle_a <- c(aexp-(0.475*sqrt(vara)),aexp+(0.475*sqrt(vara)))
+intervalle_b <- c(bexp-(0.475*sqrt(varb)),bexp+(0.475*sqrt(varb)))
+print(paste("intervalle de a= [",intervalle_a[1],",",intervalle_a[2],"]"))
+print(paste("intervalle de b= [",intervalle_b[1],",",intervalle_b[2],"]"))
+
+```
+La vraie valeur n'est pas toujours incluse dans ses intervalles ceci est dû à la taille trop faible des échantillons, pour de faibles valeurs de n notre approximation n'est pas valable.
+
+### Question 7
+
+Afin d'arriver à ce but, nous avons utilisé la méthode qui suit :
+
+```{R couverture_empirique_Q7, include=TRUE}
+couverture_a <- intervalle_a
+couverture_b <- intervalle_b
+for(i in 2:100){
+  echantWeibull <- rweibull(10,2,3)
+  hes<-optim(par=c(2,3),nlogL_Weibull, x = echantWeibull, hessian=TRUE)
+
+
+  matcov <- solve(hes$hessian)
+  vara <- matcov[1]
+  varb <- matcov[4]
+  aexp <- hes$par[1]
+  bexp <- hes$par[2]
+  min_a <- min(c(aexp-(0.475*sqrt(vara)), aexp+(0.475*sqrt(vara)), couverture_a[1]))
+  min_b <- min(c(bexp-(0.475*sqrt(varb)), bexp+(0.475*sqrt(varb)), couverture_b[1]))
+  max_a <- max(c(aexp+(0.475*sqrt(vara)), aexp+(0.475*sqrt(vara)), couverture_a[2]))
+  max_b <- max(c(bexp+(0.475*sqrt(varb)), bexp+(0.475*sqrt(varb)), couverture_b[2]))
+  couverture_a <- c(min_a,max_a)
+  couverture_b <- c(min_b,max_b)
+}
+```
+
+Après application de la méthode précédente, nous obtenons les résultats suivants :
+
+```{r print_Q7, include = TRUE, echo = FALSE}
+print(paste("couverture de a= [",couverture_a[1],",",couverture_a[2],"]"))
+print(paste("couverture de b= [",couverture_b[1],",",couverture_b[2],"]"))
+```
+\newpage
+
+### Question 8
+```{R echantillons croissant,include=TRUE,echo=FALSE}
+
+tabcouverture_a <- c()
+tabcouverture_b <- c()
+tabmaxi_a <- c()
+tabmaxi_b <- c()
+for(i in c(50,100,200)){
+  couverture_a <- c(8000000,-8000000)
+  couverture_b <- c(8000000,-8000000)
+  for(j in 1:100){
+    echantWeibull <- rweibull(i,2,3)
+    hes <- optim(par = c(2,3),nlogL_Weibull, x = echantWeibull, hessian = TRUE)
+
+    matcov <- solve(hes$hessian)
+    vara <- matcov[1]
+    varb <- matcov[4]
+    aexp <- hes$par[1]
+    bexp <- hes$par[2]
+    tabmaxi_a <- c(tabmaxi_a,aexp)
+    tabmaxi_b <- c(tabmaxi_b,bexp)
+    min_a <- min(c(aexp-(0.475*sqrt(vara)),aexp+(0.475*sqrt(vara)),couverture_a[1]))
+    min_b <- min(c(bexp-(0.475*sqrt(varb)),bexp+(0.475*sqrt(varb)),couverture_b[1]))
+    max_a <- max(c(aexp+(0.475*sqrt(vara)),aexp+(0.475*sqrt(vara)),couverture_a[2]))
+    max_b <- max( c(bexp + (0.475*sqrt(varb)), bexp + (0.475*sqrt(varb)), couverture_b[2]) )
+    couverture_a <- c(min_a,max_a)
+    couverture_b <- c(min_b,max_b)
+
+  }
+  tabcouverture_a <- c(tabcouverture_a,couverture_a)
+  tabcouverture_b <- c(tabcouverture_b,couverture_b)
+}
+par(mfrow=c(2,3))
+hist(tabmaxi_a[1:100],xlab="maximum de vraissemblence",main="estimateur a N=50")
+hist(tabmaxi_b[1:100],xlab="maximum de vraissemblence",main="estimateur b N=50")
+hist(tabmaxi_a[101:200],xlab="maximum de vraissemblence",main="estimateur a N=100")
+hist(tabmaxi_b[101:200],xlab="maximum de vraissemblence",main="estimateur b N=100")
+hist(tabmaxi_a[201:300],xlab="maximum de vraissemblence",main="estimateur a N=200")
+hist(tabmaxi_b[201:300],xlab="maximum de vraissemblence",main="estimateur b N=200")
+```
+Lorsque n tend vers la l'infinie la loi théorique des estimateurs a et b vaut:
+$\mathcal{N}(\begin{pmatrix} a \\ b \end{pmatrix},V)$ où $V$ est la matrice de covariance de la loi Weibull pour les paramètre a et b.
+
+```{R courverture pour différentes valeurs de n, echo=FALSE}
+print(paste("N=50 couverture de a= [",tabcouverture_a[1],",",tabcouverture_a[2],"]"))
+print(paste("N= 50 couverture de b= [",tabcouverture_b[1],",",tabcouverture_b[2],"]"))
+print(paste("N=100 couverture de a= [",tabcouverture_a[3],",",tabcouverture_a[4],"]"))
+print(paste("N= 100 couverture de b= [",tabcouverture_b[3],",",tabcouverture_b[4],"]"))
+print(paste("N=200 couverture de a= [",tabcouverture_a[5],",",tabcouverture_a[6],"]"))
+print(paste("N= 200 couverture de b= [",tabcouverture_b[5],",",tabcouverture_b[6],"]"))
+```
+Lorsque la taille de l'échantillon augmente, la taille de la couverture empirique
+des estimateurs diminue et les maximum de vraisemblances sont plus proche des
+valeurs théoriques de la loi de weibull qui sont donnés pour construire les
+échantillons.
+
+\newpage
+
+**Méthode delta**
+
+### Question 9
+
+Nous avons simulé un tel échantillon de la manière suivante :
+
+```{r echantillon, include=TRUE, echo=TRUE}
+#echantillon loi gamma
+echantillonGamma <- rgamma(200,2,2)
+```
+
+
+
+```{r gradient, include=TRUE, echo=FALSE}
+#fonction pour calculer le gradient
+myderiv <- function(g,par)
+{
+  d<-length(par)
+  ep<-0.0001
+  eps<- ep*par
+  Dg <- rep(0,d)
+  for(i in 1:d){
+    par_t<-par
+    par_t[i]<-par_t[i]+eps[i]
+    Dg[i] <- (g(par_t)-g(par))/eps[i]
+  }
+  return(Dg)
+}
+```
+
+
+
+```{r nlog_gamma, include=TRUE, echo=FALSE}
+#nlog_gamma
+nlogL_Gamma <- function(theta, x) {
+  y <- log(dgamma(x,theta[1],theta[2]))
+  s <- sum(y)
+  if (s < -10^(6)) {
+    return (10^6)
+  }
+  return (-s)
+
+}
+```
+
+```{r g, include=TRUE, echo=FALSE}
+#fonction g pour 9)
+g_gamma <- function(theta) {
+  return (theta[1] / theta[2])
+}
+```
+
+Pour l'estimateur $\phi = \frac{\alpha}{\beta}$, on a implémenté :
+
+```{r estimateur, include=TRUE, echo=TRUE}
+#estimateur gamma
+estimateur_phi_gamma <- function(x) {
+  opt <- optim(par = c(2,3),nlogL_Gamma, x = echantillonGamma, method = "L-BFGS-B",
+               lower = c(0,10^(-4)))
+  return (g_gamma(opt$par))
+}
+```
+
+Et pour son écart type, on a :
+
+```{r ecart_type_estimateur, include=TRUE, echo=TRUE}
+#ecart type de l'estimateur
+ecart_type_estim_gamma <- function(x) {
+  opt <- optim(par = c(2,3),nlogL_Gamma, x = echantillonGamma, method = "L-BFGS-B",
+               lower = c(0,10^(-4)), hessian=TRUE)
+  grad <-t(matrix(myderiv(g_gamma, opt$par),1,2))
+  Io <- matrix(solve(opt$hessian),2,2)
+  return (sqrt(t(grad) %*% Io %*% grad))
+}
+```
+```{r intervalle_confiance_gamma, include=TRUE,echo=FALSE}
+#intervalle 95%
+sigma <- ecart_type_estim_gamma(echantillonGamma)
+estim <- estimateur_phi_gamma(echantillonGamma)
+print(paste("L'intervalle de confiance à 95% de phi est : [",estim - 0.475 * sigma ,
+            estim + 0.475 * sigma , "]"))
+
+```
+
+
+
+
+### Question10
+
+
+Nous avons simulé un tel échantillon de la manière suivante :
+```{r echantillon_cauchy, include = TRUE, echo = TRUE}
+echantillonCauchy<-rcauchy(2000, 10, 0.1)
+```
+
+(i) Comme $\mathbb{P}(X > 100) = \int_{100}^{\infty} f(x, x_0, \alpha)$ , \newline
+on prend $g(x_0, \alpha) = \int_{100}^{\infty} f(x, x_0, \alpha)$ :
+
+
+```{r nlogL_cauchy, include = TRUE, echo = FALSE}
+nlogL_cauchy <- function(theta, x) {
+  y <- log(dcauchy(x,theta[1],theta[2]))
+  s <- sum(y)
+  if (s < -10^(6)) {
+    return (10^6)
+  }
+  return (-s)
+}
+```
+
+
+```{r g_cauchy, include = TRUE, echo = TRUE}
+g_cauchy <- function(theta) {
+  auxiliaire <- function(x) {
+    return (dcauchy(x, theta[1], theta[2]))
+  }
+  return (integrate(auxiliaire, lower = 100, upper = 50000)$value)
+}
+```
+\newpage
+Pour l'estimateur de $\mathbb{P}(X > 100)$ on a :
+```{r estimateur_P, include = TRUE, echo = TRUE}
+estimateur_P <- function(y) {
+  return (length(y[y>100]) / length(y))
+}
+```
+Et, pour son écart type on a :
+```{r ecart_type_P, include = TRUE, echo = TRUE}
+ecart_type_estim_cauchy <- function(y) {
+  opt <- optim(par = c(2,3),nlogL_cauchy, x = y, method = "L-BFGS-B",
+               lower = c(0,10^(-4)), hessian=TRUE)
+  grad <-t(matrix(myderiv(g_cauchy, opt$par),1,2))
+  Io <- matrix(solve(opt$hessian),2,2)
+  return (sqrt(t(grad) %*% Io %*% grad))
+}
+```
+
+
+```{r test, include = TRUE, echo = FALSE}
+estim <- estimateur_P(echantillonCauchy)
+ecart_type <- ecart_type_estim_cauchy(echantillonCauchy)
+
+print(paste("L'intervalle à 95% de P(X>100) vaut : [", estim - 1.96 * ecart_type, estim + 1.96 * ecart_type, "]"))
+```
+
+
+(ii) On a $\mathbb{P}(X\leq x) = 1 - \int_{x}^{\infty} f(x, x_0, \alpha)dx$ \newline
+Ce qui nous donne : $Arctan(\frac{x - x_0}{\alpha}) = 0.49 * \pi$ \newline
+Donc on obtient g en trouvant $y$ tel que $Arctan(y) = 0.49*\pi$ puis en calculant $x = y * \alpha + x_0$ :
+
+```{r g_cauchy_v2, include = TRUE, echo = TRUE}
+
+g <- function(x) {
+  return (abs(atan(x) - 0.49*pi))
+}
+
+g_cauchy_v2 <- function(theta) {
+  value <- optimize(f = g, c(0,10000), tol=.Machine$double.eps^0.5)$min
+  return (theta[1] + theta[2]*value)
+}
+```
+
+Pour l'estimateur de $\mathbb{P}(X\leq x)$ on a :
+```{r estim_cauchy_v2, include = TRUE, echo = TRUE}
+estimateur_x <- function(y) {
+  opt <- optim(par = c(2,3),nlogL_cauchy, x = y, method = "L-BFGS-B",
+               lower = c(0,10^(-4)), hessian=TRUE)
+  return (g_cauchy_v2(opt$par))
+}
+```
+
+Et, pour son écart type :
+```{r ecart_type_estim_cauchy_v2, include = TRUE, echo = TRUE}
+ecart_type_estim_cauchy_v2 <- function(y) {
+  opt <- optim(par = c(2,3),nlogL_cauchy, x = y, method = "L-BFGS-B",
+               lower = c(0,10^(-4)), hessian=TRUE)
+  grad <-t(matrix(myderiv(g_cauchy_v2, opt$par),1,2))
+  Io <- matrix(solve(opt$hessian),2,2)
+  return (sqrt(t(grad) %*% Io %*% grad))
+}
+```
+
+
+```{r test_cauchy_v2, include = TRUE, echo = FALSE}
+estim <- estimateur_x(echantillonCauchy)
+ecart_type <- ecart_type_estim_cauchy_v2(echantillonCauchy)
+
+
+print(paste("L'intervalle à 95% de x tel que P(X>x) = 0.99 vaut : [", estim - 1.96 * ecart_type, estim + 1.96 * ecart_type, "]"))
+```
+
+\newpage
+
+
+
+### Question 11
+
+```{r echant_normal, include=TRUE, echo=FALSE}
+#echantillon Normal
+echantillonNormal <- rnorm(10, 2, 1)
+```
+Les estimateurs de $\mu~et~ \theta$ valent:
+```{r nlogL_Norm, include=TRUE, echo=FALSE}
+nlogL_Norm <- function(theta, x) {
+  y <- log(dnorm(x,theta[1],theta[2]))
+  s <- sum(y)
+  if (s < -10^(6)) {
+    return (10^6)
+  }
+  return (-s)
+}
+```
+```{r estimateur_mu_sigma, include=TRUE, echo=FALSE}
+opt <- optim(c(2,1), nlogL_Norm, x = echantillonNormal, method = "L-BFGS-B",hessian=TRUE)
+print(paste("On a : mu = ", opt$par[1], " et sigma = ", opt$par[2]))
+```
+L'intervalle obtenu avec la méthode asymptotic est le suivant:
+
+```{R normal asymptotic,include=TRUE,echo=FALSE}
+matcov<-solve(opt$hessian)
+varmu <- matcov[1]
+varsig <- matcov[4]
+muexp <- hes$par[1]
+sigexp <- hes$par[2]
+intervalle_mu <- c(muexp-(1.96*sqrt(varmu)),muexp+(1.96*sqrt(varmu)))
+intervalle_sig <- c(sigexp-(1.96*sqrt(varsig)),sigexp+(1.96*sqrt(varsig)))
+print(paste("intervalle de mu à 95% vaut : [",intervalle_mu[1],",",intervalle_mu[2],"]"))
+```
+L'intervalle obtenu avec la méthode bootstrap paramétriques est le suivant:
+
+```{r parametric_bootstrap_norm, include=TRUE, echo=FALSE}
+#parametric bootstrap
+paramBootstrap_Normal <- function(echantillon) {
+  M <- 1000
+  opt <- optim(c(2,1), nlogL_Norm, x = echantillon, method = "L-BFGS-B", lower=c(-100,10^-4))
+  mu <- opt$par[1]
+  sigma <- opt$par[2]
+  mus <- c()
+  for (i in 1:M) {
+    opt <- optim(c(2,1), nlogL_Norm, x = rnorm(10,mu,sigma), method = "L-BFGS-B", lower=c(-100,10^-4))
+    mus <- append(mus, opt$par[1])
+  }
+  inf <- quantile(mus, 0.025)
+  sup <- quantile(mus, 0.95)
+
+  return (c(inf,sup))
+}
+```
+
+
+```{r test_param_norm, include=TRUE, echo=FALSE}
+#test parametric bootstrap
+values <- paramBootstrap_Normal(echantillonNormal)
+print(paste("L'intervalle de confiance à 95% de mu est : [",values[1] ,
+            values[2] , "]"))
+```
+
+```{r nonParamametric_norm, include=TRUE, echo=FALSE}
+nonParamBootstrap_Normal <- function(echantillon) {
+  M <- 1000
+  opt <- optim(c(2,1), nlogL_Norm, x = echantillon, method = "L-BFGS-B", lower=c(-100,10^-4))
+  mus <- c()
+  for (i in 1:M) {
+    xsim <- sample(echantillon, size = 10, replace=TRUE)
+    opt <- optim(c(2,1), nlogL_Norm, x = xsim, method = "L-BFGS-B", lower=c(-100,10^-4))
+    mus <- append(mus, opt$par[1])
+  }
+  inf <- quantile(mus, 0.025)
+  sup <- quantile(mus, 0.95)
+
+  return (c(inf,sup))
+}
+```
+L'intervalle obtenu avec la méthode non bootstrap paramétriques le suivant:
+
+```{r test_nonParam_norm, include=TRUE, echo=FALSE}
+values <- nonParamBootstrap_Normal(echantillonNormal)
+print(paste("L'intervalle de confiance à 95% de mu est : [",values[1] ,
+            values[2] , "]"))
+```
+La valeur réelle de $\mu$ est bien contenu dans les intervalles obtenus par les methodes mais la méthode asymptotique donne un intervalle beaucoup plus grand que pour les autres méthodes. En revanche la différence entres les deux modèles bootstrap est très faible mais sur plusieurs essais la methodes non paramétrique est mieux centré sur la valeurs réel de $\mu$ mais son intervalle est plus petit voir trop petit.
+
+
+\newpage
+
+### Question 12
+Si $\overline{x} \ge 0$ c'est l'estimateur du maximum de vraisemblance de $X_{i}$.
+On sait que $\theta \ge 0$ donc si $\overline{x} < 0$ on sais que l'estimateur du maximum de vraisemblance est supérieur ou égale à 0 donc 0 est la valeur qui correspond le mieux à l'échantillions en prenant en compte la condition $\theta \ge 0$.
+
+Ainsi le maximum de vraisemblance de $X_{i}$ vaut $max(\overline{x},0)$
+
+La fonction densité du maximum de vraissemblance de ce modèle n'est pas continue en 0 car tous les echantillons qui donnerais une valeurs de $\overline{x}$ négatif, ils attribuent au maximum de ressemblance un valeurs de 0. La probabilité que le mle =0 est non négligeable.
+Le modèle obtenu n'est donc pas régulier.
+```{R fonction avec theta positif,include=TRUE,echo=FALSE}
+paramBootstrap_theta_pos <- function(echantillon) {
+  M <- 100
+  opt <- optim(c(2,1), nlogL_Norm, x = echantillon, method = "L-BFGS-B", lower=c(-100,10^-4))
+  mu <- max(opt$par[1],0)
+  sigma <- opt$par[2]
+  mus <- c()
+  for (i in 1:M) {
+    opt <- optim(c(2,1), nlogL_Norm, x = rnorm(10,mu,sigma), method = "L-BFGS-B", lower=c(-100,10^-4))
+    mus <- append(mus, max(opt$par[1],0))
+  }
+  inf <- quantile(mus, 0.025)
+  sup <- quantile(mus, 0.975)
+
+  return (list(inf=inf,sup=sup))
+}
+
+nonParamBootstrap_theta_pos <- function(echantillon) {
+  M <- 100
+  opt <- optim(c(2,1), nlogL_Norm, x = echantillon, method = "L-BFGS-B", lower=c(-100,10^-4))
+  mus <- c()
+  for (i in 1:M) {
+    xsim <- sample(echantillon, size = 10, replace=TRUE)
+    opt <- optim(c(2,1), nlogL_Norm, x = xsim, method = "L-BFGS-B", lower=c(-100,10^-4))
+    mus <- append(mus, max(opt$par[1],0))
+  }
+  inf <- quantile(mus, 0.025)
+  sup <- quantile(mus, 0.975)
+
+  return (list(inf=inf,sup=sup))
+}
+
+```
+
+
+```{R simulation des Xi bootstrap ,inculde=TRUE,echo=FALSE}
+valeurs_de_test <- seq(0,1,length.out=21)
+ajoute <- 2:10
+valeurs_de_test <- c(valeurs_de_test,ajoute)
+bootparamsup <- c()
+bootparaminf <- c()
+bootnonparamsup <- c()
+bootnonparaminf <- c()
+for (i in valeurs_de_test){
+  echant<-rnorm(10,mean=i,sd = 1)
+  bparam <- paramBootstrap_theta_pos(echant)
+  bnonparam <- nonParamBootstrap_theta_pos(echant)
+  bootparamsup <- c(bootparamsup,bparam$sup)
+  bootparaminf <- c(bootparaminf,bparam$inf)
+  bootnonparamsup <- c(bootnonparamsup,bnonparam$sup)
+  bootnonparaminf <- c(bootnonparaminf,bnonparam$inf)
+}
+```
+
+```{R plotboot,include=TRUE,echo=FALSE}
+par(mfrow=c(1,2))
+plot(valeurs_de_test[1:20], bootparamsup[1:20],
+     main = "Mle boot parametrique",
+     xlab = "theta initiale",
+     ylab = "maximum vraissamblance",
+     ylim=c(-1,2)
+)
+points(valeurs_de_test,bootparaminf)
+
+plot(valeurs_de_test[1:20], bootnonparamsup[1:20],
+     main = "Mle boot non parametrique",
+     xlab = "theta initiale",
+     ylab = "maximum vraissamblance",
+     ylim=c(-1,2)
+)
+points(valeurs_de_test,bootnonparaminf)
+
+par(mfrow=c(1,2))
+plot(valeurs_de_test[1:29], bootparamsup[1:29]-bootparaminf[1:29],
+     main = "Mle boot parametrique",
+     xlab = "theta initiale",
+     ylab = "écart entre les bornes",
+     ylim=c(0,2)
+)
+
+plot(valeurs_de_test[1:29], bootnonparamsup[1:29]-bootnonparaminf[1:29],
+     main = "Mle boot non parametrique",
+     xlab = "theta initiale",
+     ylab = "écart entre les bornes",
+     ylim=c(0,2)
+)
+
+```
+La taille des intervalles de confiance est réduite pour des faibles valeurs de $\theta$ car la born inférieur est écrasé sur la valeurs 0.
+On observe aucune différence significative entre les deux modèles bootstrap.
+
+\newpage
+
+
+
+### Question 13
+
+Pour faire la couverture de l'échantillon de loi gamma, on reprend les fonctions faites en question 9 pour implémenter une fonction calculant la couverture par la méthode delta :
+```{r couverture_methode_delta, include = TRUE, echo = TRUE}
+couverture_methode_delta <- function(n) {
+  infs <- c()
+  sups <- c()
+  for (i in 1:n) {
+    x <- rgamma(200, 2, 2)
+    phi_gamma <- estimateur_phi_gamma(x)
+    sigma_gamma <- ecart_type_estim_gamma(x)
+    infs <- append(infs, phi_gamma - 0.475 * sigma_gamma)
+    sups <- append(sups, phi_gamma + 0.475 * sigma_gamma)
+  }
+  inf <- min(infs)
+  sup <- max(sups)
+  return (c(inf,sup))
+}
+```
+
+```{r testCouverture_methode_delta, include = TRUE, echo = FALSE}
+
+couvertureDelta <- couverture_methode_delta(500)
+
+cat("La couverture pour la méthode delta est : [", couvertureDelta[1], ",", couvertureDelta[2], "]")
+```
+
+
+```{r bootstrap_param_gamma, include = TRUE, echo = FALSE}
+bootstrap_parametric_gamma_phi <- function(echantillon) {
+  M <- 50
+  opt <- optim(par = c(2,2),nlogL_Gamma, x = echantillon, method = "L-BFGS-B",
+               lower = c(0,10^(-4)))
+  alpha <- opt$par[1]
+  beta <- opt$par[2]
+  phis <- c()
+  for (i in 1:M) {
+    opt <- optim(par = c(2,2),nlogL_Gamma, x = rgamma(200, alpha, beta), method = "L-BFGS-B",
+                 lower = c(0,10^(-4)))
+    phis <- append(phis, g_gamma(opt$par))
+  }
+  inf <- quantile(phis, 0.025)
+  sup <- quantile(phis, 0.975)
+
+  return (c(inf,sup))
+}
+```
+
+On fait une fonction pour calculer la couverture avec la méthode bootstrap paramétrique :
+```{r couverture_bootstrap_param, include = TRUE, echo = TRUE}
+couverture_bootstrap_parametric <- function(n) {
+  infs <- c()
+  sups <- c()
+  for (i in 1:n) {
+    x <- rgamma(200, 2, 2)
+    intervalle <- bootstrap_parametric_gamma_phi(x)
+    infs <- append(infs, intervalle[1])
+    sups <- append(sups, intervalle[2])
+  }
+  inf <- min(infs)
+  sup <- max(sups)
+  return (c(inf,sup))
+}
+```
+
+```{r testCouverture_bootstrap_param, include = TRUE, echo = FALSE}
+couvertureBootstrapParam <- couverture_bootstrap_parametric(50)
+
+cat("La couverture pour la méthode bootstrap paramétrique est :[", couvertureBootstrapParam[1], ",", couvertureBootstrapParam[2], "]")
+```
+
+\newpage
+```{r bootstrap_non_param_gamma, include = TRUE, echo = FALSE}
+bootstrap_nonParametric_gamma_phi <- function(echantillon) {
+  M <- 50
+  opt <- optim(par = c(2,2),nlogL_Gamma, x = echantillon, method = "L-BFGS-B",
+               lower = c(0,10^(-4)))
+  phis <- c()
+  for (i in 1:M) {
+    xsim <- sample(echantillon, size = 10, replace=TRUE)
+    opt <- optim(par = c(2,2),nlogL_Gamma, x = xsim, method = "L-BFGS-B",
+                 lower = c(0,10^(-4)))
+    phis <- append(phis, g_gamma(opt$par))
+  }
+  inf <- quantile(phis, 0.025)
+  sup <- quantile(phis, 0.95)
+
+  return (c(inf,sup))
+}
+```
+
+
+On fait une fonction pour calculer la couverture avec la méthode bootstrap non paramétrique :
+```{r couverture_bootstrap_non_param, include = TRUE, echo = TRUE}
+couverture_bootstrap_nonParametric <- function(n) {
+  infs <- c()
+  sups <- c()
+  for (i in 1:n) {
+    x <- rgamma(200, 2, 2)
+    intervalle <- bootstrap_nonParametric_gamma_phi(x)
+    infs <- append(infs, intervalle[1])
+    sups <- append(sups, intervalle[2])
+  }
+  inf <- min(infs)
+  sup <- max(sups)
+  return (c(inf,sup))
+}
+```
+
+```{r testCouverture_bootstrap_non_param, include = TRUE, echo = FALSE}
+couvertureBootstrapNonParam <- couverture_bootstrap_nonParametric(50)
+
+cat("La couverture pour la méthode bootstrap non paramétrique est : [", couvertureBootstrapNonParam[1], ",", couvertureBootstrapNonParam[2], "]")
+```
+
+
+\newpage
+
+
+### Question 14
+
+On a maintenant une loi normale mixture définie par la densité :
+\[
+f(x|\mu, p)=p N(x|\mu) + (1-p) N(x|0)\,,
+\]
+où $N(x|\mu)$ est la densité de $N(\mu,1)$ évaluée en $x$ et $0 < p < 1$.
+
+On a choisi ici de prendre $\mu \in [2, 5]$ afin de montrer un phénomène remarquable.
+
+```{r prep_Q14_part1, include = FALSE}
+n_14 <- 100
+p_14 <- runif(n = 1, min = 0.01, max = 0.99)
+mu_14 <- runif(n = 1, min = 1.5, max = 3.5)
+x_14 <- seq(from = -4, to = 4, length.out = 100)
+f_14 <- function(x, mu, p) {
+  return(p*dnorm(x = x, mean = mu, sd = 1) + (1-p)*dnorm(x = x, mean = 0, sd = 1))
+}
+rNormMix <- function(n, p, mu) {
+  rep <- c()
+  for (i in 1:n) {
+    y <- rbinom(1, 1, p)
+    if (y == 1) {
+      rep <- append(rep, rnorm(1, mu, 1))
+    }
+    else {
+      rep <- append(rep, rnorm(1,0, 1))
+    }
+  }
+  return (rep)
+}
+```
+
+```{r do_Q14_part1, include = TRUE, echo = FALSE}
+# to_plot_q14_p1 <- data.frame(x = x_14, y = f_14(x_14, mu_14, p_14))
+# to_plot_q14_p1 <- to_plot_q14_p1[order(to_plot_q14_p1$x),]
+# plot(to_plot_q14_p1$x, to_plot_q14_p1$y, type = "l", xlim = c(min(-5, -5 + mu_14), max(5, 5 + mu_14)),
+#     xaxt = "n", yaxt = "n",
+#     main = "Représentation d'un échantillon de taille n=100",
+#     sub = paste(c("Ici, on a p =", p_14, "et mu =", mu_14), collapse = " "),
+#     xlab = "x", ylab = "f(x|mu, p)")
+# axis(side = 1, at = seq(-5, 5, by = 1), las = 1)
+# axis(side = 2, at = seq(0, max(to_plot_q14_p1$y) + 0.1, by = 0.1), las = 1)
+
+yes <- rNormMix(n_14, p = p_14, mu = mu_14)
+hist(yes, prob = TRUE, breaks = 20, xlim = c(min(-5, -5 + mu_14), max(5, 5 + mu_14)),
+     xaxt = "n", yaxt = "n",
+     main = "Représentation d'un échantillon de taille n=100",
+     sub = paste(c("Ici, on a p =", p_14, "et mu =", mu_14), collapse = " "),
+     xlab = "x", ylab = "f(x|mu, p)")
+y_14  <- f_14(x_14, mu_14, p_14)
+points(x_14, y_14, col = "red")
+axis(side = 1, at = seq(-5, 5, by = 1), las = 1)
+axis(side = 2, at = seq(0, max(y_14) + 0.1, by = 0.1), las = 1)
+```
+
+Nous cherchons maintenant à construire des intervalles bootstrap de confiance à 95% pour $\mu$ et $p$.
+\newline
+Nous allons donc implémenter les fonctions nécessaires, et de la même manière que précédemment.
+
+
+```{r def_logvrais_normix_q14, include = FALSE}
+
+nlogL_Norm_mix <- function(x, mu, p) {
+  y <- log(f_14(x, mu, p))
+  s <- sum(y)
+  return (-max(-10^6, s))
+}
+
+```
+
+```{r q14_bootstrap, include = FALSE}
+
+q14_p_paramBootstrap <- function(echantillon, p, mu) {
+  M <- 100
+  opt <- optim(par = p, nlogL_Norm_mix, x = echantillon, mu = mu,method = "L-BFGS-B", lower=10^(-6), upper = 1 - 10^(-6))
+  pbis <- opt$par
+  ps <- c()
+  for (i in 1:M) {
+    opt <- optim(par = 0.01, nlogL_Norm_mix, x = rNormMix(n = 100, mu = mu, p = pbis),
+                 mu = mu,
+                 method = "L-BFGS-B", lower=10^(-6), upper = 1 - 10^(-6))
+    ps <- c(ps, opt$par)
+  }
+  inf <- quantile(ps, 0.025)
+  sup <- quantile(ps, 0.975)
+
+  return (list(inf=inf,sup=sup))
+}
+
+q14_mu_paramBootstrap <- function(echantillon, p, mu) {
+  M <- 100
+  opt <- optim(par = mu, nlogL_Norm_mix, x = echantillon, p = p,method = "L-BFGS-B", lower = -100, upper = 100)
+  mu2 <- opt$par
+  mus <- c()
+  for (i in 1:M) {
+    opt <- optim(par = mu2, nlogL_Norm_mix, x = rNormMix(n = 100, mu = mu2, p = p),
+                 p = p,
+                 method = "L-BFGS-B", lower=-100, upper = 100)
+    mus <- c(mus, opt$par)
+  }
+  inf <- quantile(mus, 0.025)
+  sup <- quantile(mus, 0.975)
+
+  return (list(inf=inf,sup=sup))
+}
+```
+
+Après application des fonctions bootstrap, nous obtenons :
+
+```{r q14_do_bootstrap, include = TRUE, echo = FALSE}
+inter_p_q14 <- q14_p_paramBootstrap(rNormMix(n = n_14, p = p_14, mu = mu_14), p = p_14, mu = mu_14)
+inter_mu_q14 <- q14_mu_paramBootstrap(rNormMix(n = n_14, p = p_14, mu = mu_14), p = p_14, mu = mu_14)
+
+cat("Pour p l'intervalle : [", inter_p_q14$inf, ",", inter_p_q14$sup, "], alors que p = ", p_14)
+cat("Et pour mu, nous avons l'intervalle : [", inter_mu_q14$inf, ",", inter_mu_q14$sup, "], alors que mu = ", mu_14)
+
+```
+
+Nous voyons donc que les intervalles bootstrap fonctionnent bien, cette méthode semble fiable
+et plutôt optimisée.
